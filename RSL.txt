@@ -1,0 +1,35 @@
+he problem without RLS
+Imagine your database is a big table in a restaurant. Without RLS, every logged-in user can see everyone else's data:
+Ali logs in and queries the students table...
+┌─────────┬──────────────┬───────────────────┐
+│ id      │ full_name    │ email             │
+├─────────┼──────────────┼───────────────────┤
+│ abc-123 │ Ali Benali   │ ali@gmail.com     │  ← his row
+│ def-456 │ Sara Meziane │ sara@gmail.com    │  ← NOT his!
+│ ghi-789 │ Yacine Hamdi │ yacine@gmail.com  │  ← NOT his!
+└─────────┴──────────────┴───────────────────┘
+Ali can see Sara and Yacine's data 😱
+This is a serious security problem.
+
+The solution: RLS
+RLS adds a rule inside the database itself that says:
+
+"When Ali queries this table, only show him rows where the id matches his logged-in ID."
+
+Ali logs in and queries the students table...
+┌─────────┬──────────────┬───────────────────┐
+│ id      │ full_name    │ email             │
+├─────────┼──────────────┼───────────────────┤
+│ abc-123 │ Ali Benali   │ ali@gmail.com     │  ← ✅ shown
+│ def-456 │ Sara Meziane │ sara@gmail.com    │  ← 🔒 hidden
+│ ghi-789 │ Yacine Hamdi │ yacine@gmail.com  │  ← 🔒 hidden
+└─────────┴──────────────┴───────────────────┘
+Ali only sees his own row ✅
+
+What does auth.uid() mean?
+This is a Supabase function that returns the ID of whoever is currently logged in.
+So this policy:
+sqlUSING (auth.uid() = id)
+Simply means:
+
+"Only show this row if the logged-in user's ID equals the row's ID."
