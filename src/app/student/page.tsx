@@ -13,6 +13,7 @@ export default function StudentDashboard() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'sessions' | 'professors'>('sessions');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Booking state
   const [bookingProf, setBookingProf] = useState<any>(null);
@@ -29,26 +30,46 @@ export default function StudentDashboard() {
         return;
       }
       setUser(user);
-      fetchData(user.id);
+      fetchData(user);
     };
     fetchUser();
   }, [router]);
 
-  async function fetchData(studentId: string) {
+  async function fetchData(currentUser: any) {
     setLoading(true);
+    // Ensure student profile exists
+    const { error: insertError } = await supabase.from('students').upsert({
+      id: currentUser.id,
+      full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0],
+      email: currentUser.email
+    }, { onConflict: 'id', ignoreDuplicates: true });
+    
+    if (insertError) {
+      console.error("Insert Student Error:", insertError);
+    }
+
     // Fetch sessions
-    const { data: sessionData } = await supabase
+    const { data: sessionData, error: sessionError } = await supabase
       .from('sessions')
       .select('*, professors(full_name, subject)')
+      .eq('student_id', currentUser.id)
       .order('scheduled_at', { ascending: true });
     
+    if (sessionError) {
+      console.error("Session fetch error:", sessionError);
+      setFetchError(prev => (prev ? prev + ' | ' : '') + 'Session Error: ' + sessionError.message);
+    }
     if (sessionData) setSessions(sessionData);
 
     // Fetch professors
-    const { data: profData } = await supabase
+    const { data: profData, error: profError } = await supabase
       .from('professors')
       .select('*');
     
+    if (profError) {
+      console.error("Prof fetch error:", profError);
+      setFetchError(prev => (prev ? prev + ' | ' : '') + 'Prof Error: ' + profError.message);
+    }
     if (profData) setProfessors(profData);
     
     setLoading(false);
@@ -95,7 +116,7 @@ export default function StudentDashboard() {
       setSessionTitle('');
       setSessionDate('');
       setSessionFile(null);
-      fetchData(user.id);
+      fetchData(user);
       setActiveTab('sessions');
     } catch (error: any) {
       alert(error.message);
@@ -137,6 +158,12 @@ export default function StudentDashboard() {
           Trouver un Professeur
         </button>
       </div>
+
+      {fetchError && (
+        <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1rem' }}>
+          <strong>Erreur de chargement:</strong> {fetchError}
+        </div>
+      )}
 
       {activeTab === 'sessions' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="sessions-grid">

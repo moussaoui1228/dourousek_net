@@ -14,6 +14,7 @@ export default function ProfessorDashboard() {
   const [activeTab, setActiveTab] = useState<'sessions' | 'profile'>('sessions');
   const [profile, setProfile] = useState({ full_name: '', subject: '', bio: '', avatar_url: '' });
   const [updating, setUpdating] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -23,25 +24,48 @@ export default function ProfessorDashboard() {
         return;
       }
       setUser(user);
-      fetchData(user.id);
+      fetchData(user);
     };
     fetchUser();
   }, [router]);
 
-  async function fetchData(professorId: string) {
+  async function fetchData(currentUser: any) {
     setLoading(true);
-    const { data: sessionData } = await supabase
+
+    // Ensure professor profile exists
+    const { error: insertError } = await supabase.from('professors').upsert({
+      id: currentUser.id,
+      full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0],
+      email: currentUser.email,
+      subject: 'À définir'
+    }, { onConflict: 'id', ignoreDuplicates: true });
+    
+    if (insertError) {
+      console.error("Insert Prof Error:", insertError);
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase
       .from('sessions')
       .select('*, students(full_name)')
+      .eq('professor_id', currentUser.id)
       .order('scheduled_at', { ascending: true });
     
+    if (sessionError) {
+      console.error("Session fetch error:", sessionError);
+      setFetchError(prev => (prev ? prev + ' | ' : '') + 'Session Error: ' + sessionError.message);
+    }
     if (sessionData) setSessions(sessionData);
 
-    const { data: profData } = await supabase
+    const { data: profData, error: profError } = await supabase
       .from('professors')
       .select('*')
-      .eq('id', professorId)
-      .single();
+      .eq('id', currentUser.id)
+      .maybeSingle();
+    
+    if (profError) {
+      console.error("Prof fetch error:", profError);
+      setFetchError(prev => (prev ? prev + ' | ' : '') + 'Prof Error: ' + profError.message);
+    }
     
     if (profData) {
       setProfile({
@@ -155,6 +179,12 @@ export default function ProfessorDashboard() {
           Mon Profil
         </button>
       </div>
+
+      {fetchError && (
+        <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1rem' }}>
+          <strong>Erreur de chargement:</strong> {fetchError}
+        </div>
+      )}
 
       {activeTab === 'sessions' && (
         <>
