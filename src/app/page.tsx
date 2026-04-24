@@ -10,7 +10,7 @@ export default function Home() {
       <nav className="glass-nav" style={{ padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.5rem' }}>
           <BookOpen className="text-primary" size={32} color="#3b82f6" />
-          <span>Dourous<span style={{ color: 'var(--primary)' }}>Net</span></span>
+          <span>Dourousek<span style={{ color: 'var(--primary)' }}>Net</span></span>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <Link href="/login?role=student" className="btn btn-outline">Espace Élève</Link>
