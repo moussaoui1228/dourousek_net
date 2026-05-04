@@ -63,13 +63,6 @@ DourousNet is a modern, premium online education platform designed to connect am
    ```
    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-##  Seeding Data
-
-To quickly get started with sample data, DourousNet includes a built-in seeding utility:
-1. Ensure your Supabase environment variables are set.
-2. Visit `http://localhost:3000/seed` in your browser.
-3. Click the **"Créer les 4 professeurs"** button to automatically populate your database with expert demo profiles.
-
 ##  Project Structure
 
 - `src/app`: Next.js App Router pages and layouts.
